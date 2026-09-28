@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "@/lib/mongodb";
 import CastingCall from "@/models/CastingCall";
+import { getSession } from "next-auth/react";
 
 export default async function handler(
   req: NextApiRequest,
@@ -18,6 +19,13 @@ export default async function handler(
     }
 
     if (req.method === "POST") {
+      const session = await getSession({ req });
+
+    if (!session?.user?.id) {
+      return res.status(401).json({
+        message: "You must be logged in to create a casting.",
+      });
+    }
   const {
     title,
     description,
@@ -47,7 +55,7 @@ export default async function handler(
     location,
     deadline,
     compensation: req.body.compensation,
-    createdBy,
+    createdBy: session.user.id,
   });
 
   return res.status(201).json(castingCall);

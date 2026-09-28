@@ -1,4 +1,40 @@
-export default function Admin() {
+import { getSession } from "next-auth/react";
+import type {
+  GetServerSideProps,
+  InferGetServerSidePropsType,
+} from "next";
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const session = await getSession(context);
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false,
+      },
+    };
+  }
+
+  if (session.user?.role !== "admin") {
+    return {
+      redirect: {
+        destination: "/dashboard",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {
+      session,
+    },
+  };
+};
+
+export default function Admin({
+  session,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <main>
       <section className="mx-auto max-w-7xl px-6 py-20">
@@ -13,6 +49,10 @@ export default function Admin() {
 
           <p className="mt-5 text-lg leading-8 text-gray-600">
             Manage users, talent profiles, and casting opportunities.
+          </p>
+
+          <p className="mt-4 text-sm text-gray-500">
+            Signed in as {session.user?.name}.
           </p>
         </div>
 

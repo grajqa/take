@@ -1,11 +1,45 @@
 import Link from "next/link";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/router";
 
 export default function Login() {
+  const router = useRouter();
+
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setError("");
+    setIsSubmitting(true);
+
+    const formData = new FormData(event.currentTarget);
+
+    const email = formData.get("email");
+    const password = formData.get("password");
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setError("Invalid email or password.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    await router.push("/dashboard");
+  };
+
   return (
     <main>
       <h1>Login</h1>
 
-      <form>
+      <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="email">Email</label>
           <input
@@ -26,13 +60,31 @@ export default function Login() {
           />
         </div>
 
-        <button type="submit">Login</button>
+        {error && <p>{error}</p>}
+
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Logging in..." : "Login"}
+        </button>
+        
+        <button
+        type="button"
+        onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+        >
+        Continue with Google
+        </button>
+
+        <button
+        type="button"
+        onClick={() => signIn("facebook", { callbackUrl: "/dashboard" })}
+      >
+        Continue with Facebook
+      </button>
       </form>
 
-    <p>
+      <p>
         Don&apos;t have an account?{" "}
         <Link href="/register">Register</Link>
-    </p>
+      </p>
     </main>
   );
 }

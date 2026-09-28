@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { signOut, useSession } from "next-auth/react";
 
 export default function Header() {
+  const { data: session, status } = useSession();
+
   return (
     <header className="border-b border-gray-200 bg-white">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
@@ -29,13 +32,31 @@ export default function Header() {
             Contact
           </Link>
 
-          <Link
-            href="/login"
-            className="rounded-full bg-black px-5 py-2.5 !text-white transition hover:bg-gray-800"
-          >
-            Login
-          </Link>
-          {/* the ! tells Tailwind: this text color must be white, overriding any other rule. */}
+          {status === "loading" ? null : session ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="transition hover:text-gray-500"
+              >
+                Dashboard
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="rounded-full bg-black px-5 py-2.5 !text-white transition hover:bg-gray-800"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-full bg-black px-5 py-2.5 !text-white transition hover:bg-gray-800"
+            >
+              Login
+            </Link>
+          )}
         </div>
       </nav>
     </header>

@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getToken } from "next-auth/jwt";
 import { connectToDatabase } from "@/lib/mongodb";
 import Talent from "@/models/Talent";
 
@@ -19,32 +20,42 @@ export default async function handler(
     }
 
     if (req.method === "POST") {
-  const {
-    userId,
-    category,
-    location,
-    bio,
-    experience,
-    portfolio,
-  } = req.body;
+      const token = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
 
-  if (!userId || !category || !location) {
-    return res.status(400).json({
-      message: "User, category, and location are required.",
-    });
-  }
+      if (!token?.id) {
+        return res.status(401).json({
+          message: "You must be logged in to create a talent profile.",
+        });
+      }
 
-  const talent = await Talent.create({
-    userId,
-    category,
-    location,
-    bio,
-    experience,
-    portfolio,
-  });
+      const {
+        category,
+        location,
+        bio,
+        experience,
+        portfolio,
+      } = req.body;
 
-  return res.status(201).json(talent);
-}
+      if (!category || !location) {
+        return res.status(400).json({
+          message: "Category and location are required.",
+        });
+      }
+
+      const talent = await Talent.create({
+        userId: token.id,
+        category,
+        location,
+        bio,
+        experience,
+        portfolio,
+      });
+
+      return res.status(201).json(talent);
+    }
 
     return res.status(405).json({
       message: "Method not allowed.",

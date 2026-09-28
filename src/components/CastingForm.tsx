@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 type CastingFormData = {
   title: string;
@@ -8,11 +9,13 @@ type CastingFormData = {
   location: string;
   deadline: string;
   compensation: string;
+  
 };
 
 export default function CastingForm() {
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const { data: session } = useSession();
 
   const {
     register,
@@ -22,8 +25,13 @@ export default function CastingForm() {
   } = useForm<CastingFormData>();
 
   const onSubmit = async (data: CastingFormData) => {
-    setSuccess("");
-    setError("");
+  setSuccess("");
+  setError("");
+
+  if (!session?.user?.id) {
+    setError("You must be logged in to create a casting.");
+    return;
+  }
 
     try {
       const response = await fetch("/api/casting", {
@@ -34,7 +42,7 @@ export default function CastingForm() {
         body: JSON.stringify({
           ...data,
           deadline: new Date(data.deadline),
-          createdBy: "6ab3a53ffcd5613d31f627ba",
+          createdBy: session.user.id,
         }),
       });
 

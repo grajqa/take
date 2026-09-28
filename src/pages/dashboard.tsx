@@ -1,9 +1,38 @@
-export default function Dashboard() {
+import { getSession } from "next-auth/react";
+import type {
+  GetServerSideProps,
+  InferGetServerSidePropsType,
+} from "next";
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const session = await getSession(context);
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/login",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: {
+      session,
+    },
+  };
+};
+
+export default function Dashboard({
+  session,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
     <main>
       <h1>Dashboard</h1>
 
-      <p>Welcome to your TAKE dashboard.</p>
+      <p>
+        Welcome, {session.user?.name || "TAKE user"}.
+      </p>
 
       <section>
         <div>

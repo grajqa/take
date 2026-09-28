@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "@/lib/mongodb";
 import Application from "@/models/Application";
+import { getSession } from "next-auth/react";
+import Talent from "@/models/Talent";
 
 export default async function handler(
   req: NextApiRequest,
@@ -20,17 +22,34 @@ export default async function handler(
     }
 
     if (req.method === "POST") {
-  const { castingCallId, talentId, message } = req.body;
+      const session = await getSession({ req });
 
-  if (!castingCallId || !talentId || !message) {
-    return res.status(400).json({
-      message: "Casting call, talent, and message are required.",
+    if (!session?.user?.id) {
+      return res.status(401).json({
+        message: "You must be logged in to submit an application.",
+      });
+    }
+  const { castingCallId, message } = req.body;
+
+    const talent = await Talent.findOne({
+      userId: session.user.id,
     });
-  }
+
+    if (!talent) {
+      return res.status(404).json({
+        message: "Talent profile not found.",
+      });
+    }
+
+      if (!castingCallId || !message) {
+      return res.status(400).json({
+        message: "Casting call and message are required.",
+      });
+    }
 
   const application = await Application.create({
     castingCallId,
-    talentId,
+    talentId: talent._id,
     message,
   });
 
