@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type CastingCardProps = {
   category: string;
   title: string;
@@ -5,6 +7,7 @@ type CastingCardProps = {
   location: string;
   compensation: string;
   deadline: string;
+  href: string;
 };
 
 export default function CastingCard({
@@ -14,6 +17,7 @@ export default function CastingCard({
   location,
   compensation,
   deadline,
+  href
 }: CastingCardProps) {
   return (
     <div className="rounded-2xl border border-gray-200 p-7 transition hover:shadow-md">
@@ -37,9 +41,12 @@ export default function CastingCard({
         <p>Deadline: {deadline}</p>
       </div>
 
-      <button className="mt-7 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition hover:bg-gray-800">
+      <Link
+        href={href}
+        className="mt-7 inline-block rounded-full bg-black px-5 py-2.5 text-sm font-medium !text-white transition hover:bg-gray-800"
+        >
         View Casting
-      </button>
+        </Link>
     </div>
   );
 }
