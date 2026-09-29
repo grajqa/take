@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useFavorites } from "@/context/FavoritesContext";
 
 type Talent = {
   _id: string;
@@ -15,6 +16,7 @@ type Talent = {
 };
 
 export default function Talent() {
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [talents, setTalents] = useState<Talent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -72,23 +74,29 @@ export default function Talent() {
                 </div>
 
                 <h2 className="mt-6 text-xl font-semibold">
-                  {talent.category}
-                </h2>
-
-                <h2 className="mt-6 text-xl font-semibold">
-                {talent.userId.name}
+                  {talent.userId.name}
                 </h2>
 
                 <p className="mt-1 text-sm font-medium text-gray-500">
-                {talent.category}
+                  {talent.category}
                 </p>
 
-                <Link
-                href={`/talent/${talent._id}`}
-                className="mt-6 inline-block rounded-full bg-black px-5 py-2.5 text-sm font-medium !text-white transition hover:bg-gray-800"
-                >
-                View Profile
-                </Link>
+                <div className="mt-6 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite(talent._id)}
+                    className="rounded-full border border-gray-300 px-5 py-2.5 text-sm font-medium transition hover:bg-gray-100"
+                  >
+                    {isFavorite(talent._id) ? "Saved" : "Save"}
+                  </button>
+
+                  <Link
+                    href={`/talent/${talent._id}`}
+                    className="rounded-full bg-black px-5 py-2.5 text-sm font-medium !text-white transition hover:bg-gray-800"
+                  >
+                    View Profile
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
