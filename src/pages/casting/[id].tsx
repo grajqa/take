@@ -4,6 +4,8 @@ import type {
   InferGetStaticPropsType,
 } from "next";
 import Link from "next/link";
+import { connectToDatabase } from "@/lib/mongodb";
+import CastingCall from "@/models/CastingCall";
 
 type Casting = {
   _id: string;
@@ -108,15 +110,13 @@ export default function CastingDetail({
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  await connectToDatabase();
 
-  const response = await fetch(`${baseUrl}/api/casting`);
-  const castings = await response.json();
+  const castings = await CastingCall.find({}, "_id").lean();
 
-  const paths = castings.map((casting: Casting) => ({
+  const paths = castings.map((casting) => ({
     params: {
-      id: casting._id,
+      id: casting._id.toString(),
     },
   }));
 
@@ -135,24 +135,45 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     };
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  try {
+    await connectToDatabase();
 
-  const response = await fetch(`${baseUrl}/api/casting/${id}`);
+    const casting = await CastingCall.findById(id)
+      .select(
+        "_id title description category location deadline compensation status"
+      )
+      .lean();
 
-  if (!response.ok) {
+    if (!casting) {
+      return {
+        notFound: true,
+        revalidate: 60,
+      };
+    }
+
+    const serializedCasting: Casting = {
+      _id: casting._id.toString(),
+      title: casting.title,
+      description: casting.description,
+      category: casting.category,
+      location: casting.location,
+      deadline: casting.deadline.toISOString(),
+      compensation: casting.compensation || "",
+      status: casting.status,
+    };
+
+    return {
+      props: {
+        casting: serializedCasting,
+      },
+      revalidate: 60,
+    };
+  } catch (error) {
+    console.error("Failed to load casting:", error);
+
     return {
       notFound: true,
       revalidate: 60,
     };
   }
-
-  const casting = await response.json();
-
-  return {
-    props: {
-      casting,
-    },
-    revalidate: 60,
-  };
 };
