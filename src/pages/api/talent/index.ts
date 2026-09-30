@@ -27,7 +27,7 @@ export default async function handler(
 
       if (!token?.id) {
         return res.status(401).json({
-          message: "You must be logged in to create a talent profile.",
+          message: "You must be logged in to save a talent profile.",
         });
       }
 
@@ -45,13 +45,31 @@ export default async function handler(
         });
       }
 
+      const existingTalent = await Talent.findOne({
+        userId: token.id,
+      });
+
+      if (existingTalent) {
+        existingTalent.category = category;
+        existingTalent.location = location;
+        existingTalent.bio = bio || "";
+        existingTalent.experience = experience || "";
+        existingTalent.portfolio = Array.isArray(portfolio)
+          ? portfolio
+          : [];
+
+        await existingTalent.save();
+
+        return res.status(200).json(existingTalent);
+      }
+
       const talent = await Talent.create({
         userId: token.id,
         category,
         location,
-        bio,
-        experience,
-        portfolio,
+        bio: bio || "",
+        experience: experience || "",
+        portfolio: Array.isArray(portfolio) ? portfolio : [],
       });
 
       return res.status(201).json(talent);
