@@ -3,8 +3,7 @@ import type {
   GetStaticProps,
   InferGetStaticPropsType,
 } from "next";
-import { connectToDatabase } from "@/lib/mongodb";
-import CastingCall from "@/models/CastingCall";
+import Link from "next/link";
 
 type Casting = {
   _id: string;
@@ -14,68 +13,110 @@ type Casting = {
   location: string;
   deadline: string;
   compensation: string;
-  status: "open" | "closed";
+  status: string;
 };
 
-type Props = {
-  casting: Casting;
-};
-
-export default function CastingProfile({
+export default function CastingDetail({
   casting,
 }: InferGetStaticPropsType<typeof getStaticProps>) {
+  if (!casting) {
+    return (
+      <main className="min-h-screen px-6 py-12">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Casting not found
+          </h1>
+
+          <Link
+            href="/casting"
+            className="mt-6 inline-block text-sm font-medium text-gray-600 hover:text-gray-900"
+          >
+            ← Back to castings
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main>
-      <section className="mx-auto max-w-4xl px-6 py-20">
-        <p className="text-sm font-semibold uppercase tracking-widest text-gray-500">
-          {casting.category}
-        </p>
+    <main className="min-h-screen bg-gray-50 px-6 py-12">
+      <div className="mx-auto max-w-3xl">
+        <Link
+          href="/casting"
+          className="text-sm font-medium text-gray-600 hover:text-gray-900"
+        >
+          ← Back to castings
+        </Link>
 
-        <h1 className="mt-3 text-4xl font-bold tracking-tight md:text-5xl">
-          {casting.title}
-        </h1>
+        <section className="mt-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">
+              {casting.category}
+            </span>
 
-        <span className="mt-4 inline-block rounded-full bg-gray-100 px-3 py-1 text-xs font-medium">
-          {casting.status === "open" ? "Open" : "Closed"}
-        </span>
-
-        <div className="mt-10 rounded-2xl border border-gray-200 p-8">
-          <h2 className="text-xl font-semibold">About this casting</h2>
-
-          <p className="mt-4 leading-7 text-gray-600">
-            {casting.description}
-          </p>
-
-          <div className="mt-8 space-y-3 text-sm text-gray-600">
-            <p>📍 Location: {casting.location}</p>
-
-            <p>💰 Compensation: {casting.compensation}</p>
-
-            <p>
-              Deadline:{" "}
-              {new Date(casting.deadline).toLocaleDateString()}
-            </p>
+            <span className="text-sm text-gray-500">
+              {casting.status}
+            </span>
           </div>
 
-          <button className="mt-8 rounded-full bg-black px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-800">
-            Apply Now
-          </button>
-        </div>
-      </section>
+          <h1 className="mt-5 text-3xl font-semibold text-gray-900">
+            {casting.title}
+          </h1>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                Location
+              </p>
+              <p className="mt-1 text-sm text-gray-700">
+                {casting.location}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                Deadline
+              </p>
+              <p className="mt-1 text-sm text-gray-700">
+                {new Date(casting.deadline).toLocaleDateString()}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                Compensation
+              </p>
+              <p className="mt-1 text-sm text-gray-700">
+                {casting.compensation}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 border-t border-gray-100 pt-8">
+            <h2 className="text-lg font-semibold text-gray-900">
+              About the casting
+            </h2>
+
+            <p className="mt-3 whitespace-pre-line text-sm leading-7 text-gray-600">
+              {casting.description}
+            </p>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  await connectToDatabase();
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-  const castingCalls = await CastingCall.find()
-    .select("_id")
-    .lean();
+  const response = await fetch(`${baseUrl}/api/casting`);
+  const castings = await response.json();
 
-  const paths = castingCalls.map((casting) => ({
+  const paths = castings.map((casting: Casting) => ({
     params: {
-      id: casting._id.toString(),
+      id: casting._id,
     },
   }));
 
@@ -85,33 +126,32 @@ export const getStaticPaths: GetStaticPaths = async () => {
   };
 };
 
-export const getStaticProps: GetStaticProps<Props> = async ({
-  params,
-}) => {
-  await connectToDatabase();
-
+export const getStaticProps: GetStaticProps = async ({ params }) => {
   const id = params?.id;
 
-    if (
-    typeof id !== "string" ||
-    !/^[0-9a-fA-F]{24}$/.test(id)
-    ) {
-    return {
-        notFound: true,
-    };
-    }
-
-  const casting = await CastingCall.findById(id).lean();
-
-  if (!casting) {
+  if (typeof id !== "string") {
     return {
       notFound: true,
     };
   }
 
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
+  const response = await fetch(`${baseUrl}/api/casting/${id}`);
+
+  if (!response.ok) {
+    return {
+      notFound: true,
+      revalidate: 60,
+    };
+  }
+
+  const casting = await response.json();
+
   return {
     props: {
-      casting: JSON.parse(JSON.stringify(casting)),
+      casting,
     },
     revalidate: 60,
   };
